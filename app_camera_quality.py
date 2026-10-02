@@ -11,7 +11,7 @@ from PIL import Image
 # PAGE CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="PLANTIFY",
+    page_title="GREENLY",
     page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -257,7 +257,7 @@ def show_auth_page():
             text-align: center;
         ">
             <div style="font-size: 60px;">🌱</div>
-            <h1 style="font-size: 44px; margin-bottom: 5px;">PlantCare AI</h1>
+            <h1 style="font-size: 44px; margin-bottom: 5px;">Greenly</h1>
             <p style="font-size: 19px; color: #9aa0a6;">
                 AI-Powered Plant Disease Detection System
             </p>
@@ -295,7 +295,7 @@ def show_auth_page():
                         st.error("Invalid username or password.")
 
         with tab_register:
-            st.markdown("### Create your PlantCare account 🌱")
+            st.markdown("### Create your Greenly account 🌱")
             with st.form("register_form"):
                 name = st.text_input("Full Name")
                 new_username = st.text_input("Username")
@@ -463,7 +463,7 @@ def get_guidance(disease):
 # =========================================================
 with st.sidebar:
 
-    st.markdown("# 🌱 PlantCare AI")
+    st.markdown("# 🌱 Greenly")
 
     st.markdown(
         "**AI-Powered Plant Disease Detection**"
@@ -511,7 +511,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption("PlantCare AI • Final Year Project")
+    st.caption("Greenly • Final Year Project")
 
 
 # =========================================================
@@ -529,7 +529,7 @@ if page == "🏠 Home":
         margin-bottom: 30px;
     ">
         <h1 style="font-size: 48px; margin-bottom: 10px;">
-            🌱 Welcome to PlantCare AI
+            🌱 Welcome to Greenly
         </h1>
 
         <h3 style="font-weight: 400; color: #c8d8d0;">
@@ -626,7 +626,7 @@ if page == "🏠 Home":
 
 
     # How it works
-    st.markdown("## 🔄 How PlantCare AI Works")
+    st.markdown("## 🔄 How Greenly Works")
 
     c1, c2, c3, c4 = st.columns(4)
 
@@ -691,11 +691,11 @@ if page == "🏠 Home":
     st.markdown("""
     <div class="info-card">
 
-    <h3>Why PlantCare AI?</h3>
+    <h3>Why Greenly?</h3>
 
     <p>
     Plant diseases can affect crop health and productivity.
-    PlantCare AI demonstrates how deep learning and image
+    Greenly demonstrates how deep learning and image
     classification can assist with preliminary identification
     of plant diseases from leaf images.
     </p>
@@ -961,7 +961,7 @@ elif page == "📈 Analytics":
     )
 
     st.markdown(
-        '<div class="subtitle">A summary of your PlantCare AI activity.</div>',
+        '<div class="subtitle">A summary of your Greenly activity.</div>',
         unsafe_allow_html=True,
     )
 
@@ -1034,7 +1034,7 @@ elif page == "📊 Model Information":
 
     st.markdown(
         '<div class="subtitle">'
-        'Technical details of the PlantCare AI model'
+        'Technical details of the Greenly model'
         '</div>',
         unsafe_allow_html=True
     )
@@ -1110,14 +1110,14 @@ Confidence Score
 elif page == "ℹ️ About Project":
 
     st.markdown(
-        '<div class="main-title">ℹ️ About PlantCare AI</div>',
+        '<div class="main-title">ℹ️ About Greenly</div>',
         unsafe_allow_html=True
     )
 
     st.markdown("""
     ### 🎯 Project Objective
 
-    PlantCare AI is a deep learning based plant disease detection
+    Greenly is a deep learning based plant disease detection
     system designed to identify possible diseases from plant leaf images.
 
     The system uses image classification to analyze visual patterns
@@ -1168,5 +1168,5 @@ elif page == "ℹ️ About Project":
     """)
 
     st.success(
-        "PlantCare AI — AI-powered plant disease detection 🌱"
+        "Greenly — AI-powered plant disease detection 🌱"
     )
