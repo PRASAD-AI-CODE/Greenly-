@@ -11,7 +11,7 @@ from PIL import Image
 # PAGE CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="GREENLY",
+    page_title="Greenly",
     page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -236,6 +236,30 @@ def clear_predictions(user_id):
     conn.close()
 
 
+def get_admin_users():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, name, username, created_at FROM users ORDER BY id DESC"
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_all_predictions():
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT users.name, users.username, predictions.disease,
+               predictions.confidence, predictions.filename, predictions.predicted_at
+        FROM predictions
+        LEFT JOIN users ON predictions.user_id = users.id
+        ORDER BY predictions.id DESC
+        """
+    ).fetchall()
+    conn.close()
+    return rows
+
+
 init_database()
 
 
@@ -246,6 +270,8 @@ if "user_id" not in st.session_state:
     st.session_state["user_id"] = None
     st.session_state["user_name"] = None
     st.session_state["username"] = None
+if "admin_authenticated" not in st.session_state:
+    st.session_state["admin_authenticated"] = False
 
 
 def show_auth_page():
@@ -483,6 +509,7 @@ with st.sidebar:
         st.session_state["user_id"] = None
         st.session_state["user_name"] = None
         st.session_state["username"] = None
+        st.session_state["admin_authenticated"] = False
         st.session_state.pop("results", None)
         st.session_state.pop("guidance", None)
         st.rerun()
@@ -497,7 +524,8 @@ with st.sidebar:
         "🕘 Prediction History",
         "📈 Analytics",
         "📊 Model Information",
-        "ℹ️ About Project"
+        "ℹ️ About Project",
+        "🔐 Admin Dashboard"
     ]
 )
 
@@ -512,6 +540,75 @@ with st.sidebar:
     st.divider()
 
     st.caption("Greenly • Final Year Project")
+
+
+# =========================================================
+# ADMIN DASHBOARD
+# =========================================================
+if page == "🔐 Admin Dashboard":
+
+    st.markdown(
+        '<div class="main-title">🔐 Admin Dashboard</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="subtitle">View Greenly users and prediction records.</div>',
+        unsafe_allow_html=True,
+    )
+
+    if not st.session_state["admin_authenticated"]:
+        st.info("Admin access is required to view the database.")
+        admin_password = st.text_input("Admin Password", type="password")
+        if st.button("🔓 Open Admin Dashboard", use_container_width=True):
+            try:
+                expected_password = st.secrets["ADMIN_PASSWORD"]
+            except Exception:
+                expected_password = None
+
+            if not expected_password:
+                st.error("Admin access is not configured. Add ADMIN_PASSWORD to Streamlit Secrets.")
+            elif admin_password == expected_password:
+                st.session_state["admin_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect admin password.")
+    else:
+        if st.button("🔒 Lock Admin Dashboard"):
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
+
+        users = get_admin_users()
+        predictions = get_all_predictions()
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("👥 Total Users", len(users))
+        with c2:
+            st.metric("🌿 Total Predictions", len(predictions))
+
+        st.divider()
+        st.markdown("### 👥 Registered Users")
+        if users:
+            import pandas as pd
+            users_df = pd.DataFrame(
+                users, columns=["ID", "Name", "Username", "Created At"]
+            )
+            st.dataframe(users_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No users registered yet.")
+
+        st.divider()
+        st.markdown("### 🌿 All Predictions")
+        if predictions:
+            import pandas as pd
+            predictions_df = pd.DataFrame(
+                predictions,
+                columns=["Name", "Username", "Disease", "Confidence", "Filename", "Predicted At"],
+            )
+            predictions_df["Confidence"] = predictions_df["Confidence"].map(lambda x: f"{x:.2f}%")
+            st.dataframe(predictions_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No predictions recorded yet.")
 
 
 # =========================================================
@@ -561,8 +658,8 @@ if page == "🏠 Home":
     with col2:
         st.markdown("""
         <div class="metric-box">
-            <div class="metric-number">86.13%</div>
-            <div class="metric-label">Validation Accuracy</div>
+            <div class="metric-number">89</div>
+            <div class="metric-label">Supported Classes</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1072,9 +1169,9 @@ elif page == "📊 Model Information":
 
         **Training Epochs:** 5
 
-        **Final Training Accuracy:** 87.60%
+        **Training Metrics:** Available from the 89-class training run
 
-        **Validation Accuracy:** 86.13%
+        **Validation Metrics:** Not hard-coded from the previous 71-class model
 
         **Loss Function:** Sparse Categorical Crossentropy
 
