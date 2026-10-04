@@ -150,10 +150,17 @@ def init_database():
             disease TEXT NOT NULL,
             confidence REAL NOT NULL,
             filename TEXT,
+            image_data BLOB,
             predicted_at TEXT NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
+
+    # Migrate an existing database created by an older Greenly version.
+    # This adds image storage without deleting any existing prediction records.
+    columns = [row[1] for row in cur.execute("PRAGMA table_info(predictions)").fetchall()]
+    if "image_data" not in columns:
+        cur.execute("ALTER TABLE predictions ADD COLUMN image_data BLOB")
 
     conn.commit()
     conn.close()
@@ -193,19 +200,20 @@ def authenticate_user(username, password):
     return row
 
 
-def save_prediction(user_id, disease, confidence, filename):
+def save_prediction(user_id, disease, confidence, filename, image_bytes=None):
     conn = get_db()
     conn.execute(
         """
         INSERT INTO predictions
-        (user_id, disease, confidence, filename, predicted_at)
-        VALUES (?, ?, ?, ?, ?)
+        (user_id, disease, confidence, filename, image_data, predicted_at)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             user_id,
             disease,
             float(confidence),
             filename,
+            sqlite3.Binary(image_bytes) if image_bytes else None,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         ),
     )
@@ -249,8 +257,9 @@ def get_all_predictions():
     conn = get_db()
     rows = conn.execute(
         """
-        SELECT users.name, users.username, predictions.disease,
-               predictions.confidence, predictions.filename, predictions.predicted_at
+        SELECT predictions.id, users.name, users.username, predictions.disease,
+               predictions.confidence, predictions.filename, predictions.image_data,
+               predictions.predicted_at
         FROM predictions
         LEFT JOIN users ON predictions.user_id = users.id
         ORDER BY predictions.id DESC
@@ -602,11 +611,38 @@ if page == "🔐 Admin Dashboard":
         if predictions:
             import pandas as pd
             predictions_df = pd.DataFrame(
-                predictions,
-                columns=["Name", "Username", "Disease", "Confidence", "Filename", "Predicted At"],
+                [row[:6] + (row[7],) for row in predictions],
+                columns=["ID", "Name", "Username", "Disease", "Confidence", "Filename", "Predicted At"],
             )
             predictions_df["Confidence"] = predictions_df["Confidence"].map(lambda x: f"{x:.2f}%")
             st.dataframe(predictions_df, use_container_width=True, hide_index=True)
+
+            st.markdown("### 🖼️ Submitted Images")
+            st.caption("Images are stored in the predictions database and are visible only in this protected Admin Dashboard.")
+
+            for row in predictions:
+                prediction_id, name, username, disease, confidence, filename, image_data, predicted_at = row
+                with st.expander(
+                    f"#{prediction_id} • {name} (@{username}) • {disease} • {confidence:.2f}%"
+                ):
+                    info_col, image_col = st.columns([1, 1])
+
+                    with info_col:
+                        st.write(f"**User:** {name} (@{username})")
+                        st.write(f"**Disease:** {disease}")
+                        st.write(f"**Confidence:** {confidence:.2f}%")
+                        st.write(f"**Filename:** {filename or 'N/A'}")
+                        st.write(f"**Predicted At:** {predicted_at}")
+
+                    with image_col:
+                        if image_data:
+                            st.image(
+                                image_data,
+                                caption=f"Submitted image • {filename or 'image'}",
+                                use_container_width=True,
+                            )
+                        else:
+                            st.info("No image was stored for this older prediction.")
         else:
             st.info("No predictions recorded yet.")
 
@@ -934,6 +970,7 @@ elif page == "🔍 Disease Prediction":
                     disease,
                     confidence,
                     getattr(selected_file, "name", "camera_photo.jpg"),
+                    selected_file.getvalue(),
                 )
 
 
